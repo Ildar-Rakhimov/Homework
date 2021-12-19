@@ -4,15 +4,6 @@ import json
 import requests
 from pprint import pprint
 
-user_id = input('Введите id пользователя vk')
-ya_token = input('Введите токен для Яндекс Диск')
-photo_quantity = int(input('Сколько фотографий сохранить (предельное значение)?'))
-url = 'https://api.vk.com/method/'
-
-# Открываем токен для ВК
-with open('token.txt', 'r') as file_object:
-    vk_token = file_object.read().strip()
-
 
 def get_photo(token, version, id=None):
     """Функция для скачивания json файла с информацией о фотографиях"""
@@ -48,43 +39,52 @@ class YaUploader:
         response = requests.put(dir_url, headers=headers, params=params)
         return response.json()
 
-    def get_upload_link(self, path_to_file):
-        """Метод для получения ссылки на загрузку"""
-        upload_url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
+    def upload_by_link(self, photo_url, path_to_file):
+        """Метод для загрузки файла по url"""
+        link = 'https://cloud-api.yandex.net/v1/disk/resources/upload'
         headers = self.get_headers()
-        params = {"path": path_to_file, "overwrite": "true"}
-        response = requests.get(upload_url, headers=headers, params=params)
+        params = {'url': photo_url, 'path': path_to_file}
+        response = requests.post(link, headers=headers, params=params)
         return response.json()
-
-    def upload(self, path_to_file: str):
-        """Метод для загрузки файла"""
-        href = self.get_upload_link(path_to_file=path_to_file).get("href", "")
-        response = requests.put(href, data=open(filename, 'rb'))
-        response.raise_for_status()
-        if response.status_code == 201:
-            print("Файл загружен")
 
 
 if __name__ == '__main__':
+
+    user_id = input('Введите id пользователя vk')
+    ya_token = input('Введите токен для Яндекс Диск')
+
+    url = 'https://api.vk.com/method/'
+
+    # Открываем токен для ВК
+    with open('token.txt', 'r') as file_object:
+        vk_token = file_object.read().strip()
+
+    try:
+        quantity = int(input('Сколько фотографий сохранить (предельное значение)?'))
+    except ValueError:
+        print('Введено некорректное значение, сохраняем 5 фотографий')
+        photo_quantity = 5
+    else:
+        photo_quantity = quantity
+
     resp = get_photo(vk_token, '5.131', user_id)
     json_list = []  # Список для json-файла с результатами
     likes_count = []  # Список для проверки количества лайков
     photo_counter = 0  # Счётчик для количества сохраняемых фотографий
 
-    # Формируем имя папки и создаём локальную папку с таким именем
+    # Формируем имя папки
     dir_name = 'images' + time.strftime("%Y%m%d-%H%M%S")
-    if not os.path.isdir(dir_name):
-        os.mkdir(dir_name)
 
-    uploader = YaUploader(ya_token)
-    uploader.make_dir(dir_name)  # Создаём папку на Яндекс Диске
+    if 'error' in resp.keys():  # Проверка на ошибки доступа
+        print('Не удалось скачать фотографии. Возможно, профиль закрыт.')
+    elif 'response' in resp.keys():
 
-    for element in resp['response']['items']:
-        if photo_counter < photo_quantity:
+        uploader = YaUploader(ya_token)  # Создаём экземпляр класса
+        uploader.make_dir(dir_name)  # Создаём папку на Яндекс Диске
 
-            temp_dict = {}  # Временный словарь для json-файла с результатами
-            ava_url = element['sizes'][-1]['url']   # Ссылка на фото
-            type_value = element['sizes'][-1]['type']  # Тип размера фото
+        for element in resp['response']['items'][:photo_quantity]:
+
+            json_dict = {}  # Временный словарь для json-файла с результатами
             photo_name = element['likes']['count']  # Первоначальное имя фото из лайков
 
             # Если количество лайков одинаково, добавляем к имени фото дату загрузки
@@ -97,23 +97,20 @@ if __name__ == '__main__':
             likes_count.append(element['likes']['count'])
 
             # Обновляем временный словарь и добавляем его в json-файл
-            temp_dict['size'] = type_value
-            temp_dict['file_name'] = photo_name
-            json_list.append(temp_dict)
-
-            # Скачиваем фотографии
-            r = requests.get(ava_url)
-            with open(os.path.join(dir_name, photo_name), 'wb') as file:
-                file.write(r.content)
+            json_dict['size'] = element['sizes'][-1]['type']
+            json_dict['file_name'] = photo_name
+            json_list.append(json_dict)
 
             # Загружаем фотографии
-            filename = os.path.join(dir_name, photo_name)
             path_to_file = dir_name + '/' + photo_name
-            result = uploader.upload(path_to_file)
-
+            upload_resp = uploader.upload_by_link(element['sizes'][-1]['url'], path_to_file)
             photo_counter += 1
-            print(f'Загружено фотографий: {photo_counter} из {photo_quantity}')
+            if 'error' in upload_resp.keys():  # Проверка на ошибки
+                print('Не валидный токен')
+                break
+            elif 'href' in upload_resp.keys():
+                print(f'Загружено фотографий: {photo_counter}')
 
-    # Записываем информацию в json-файл
-    with open(os.path.join(dir_name, 'result.json'), 'w') as f:
-        json.dump(json_list, f, ensure_ascii=False, indent=2)
+                # Записываем информацию в json-файл
+                with open('result.json', 'w') as f:
+                    json.dump(json_list, f, ensure_ascii=False, indent=2)
