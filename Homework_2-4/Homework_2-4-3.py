@@ -1,7 +1,7 @@
 import sqlalchemy
 from pprint import pprint
 
-engine = sqlalchemy.create_engine('postgresql://py47:123456@localhost:5432/py47_db')
+engine = sqlalchemy.create_engine('postgresql://-:-6@localhost:5432/-')
 connection = engine.connect()
 
 # Название и год выхода альбомов, вышедших в 2018 году
