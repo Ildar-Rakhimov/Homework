@@ -31,8 +31,11 @@ class TestFirst(unittest.TestCase):
 
     @patch('builtins.input')
     def test_delete_doc(self, mock_input):
-        mock_input.return_value = '11'
-        self.assertEqual(main.delete_doc(), None)
+        mock_input.return_value = '11-2'
+        self.assertEqual(main.delete_doc(), ('11-2', True))
+
+    def test_add_new_doc(self):
+        self.assertEqual(main.add_new_doc('11-2', 'invoice', 'Геннадий Покемонов', '1'), '1')
 
 
 if __name__ == '__main__':

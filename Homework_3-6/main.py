@@ -106,11 +106,11 @@ def show_all_docs_info():
         show_document_info(current_document)
 
 
-def add_new_doc():
-    new_doc_number = input('Введите номер документа - ')
-    new_doc_type = input('Введите тип документа - ')
-    new_doc_owner_name = input('Введите имя владельца документа- ')
-    new_doc_shelf_number = input('Введите номер полки для хранения - ')
+def add_new_doc(new_doc_number, new_doc_type, new_doc_owner_name, new_doc_shelf_number):  # Переписал эту функцию
+    # new_doc_number = input('Введите номер документа - ')
+    # new_doc_type = input('Введите тип документа - ')
+    # new_doc_owner_name = input('Введите имя владельца документа- ')
+    # new_doc_shelf_number = input('Введите номер полки для хранения - ')
     new_doc = {
         "type": new_doc_type,
         "number": new_doc_number,
