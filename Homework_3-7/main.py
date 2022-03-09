@@ -13,10 +13,7 @@ class Stack:
 
     def pop(self):
         if not self.isEmpty():
-            self.some_list.pop()
-            return self.some_list[-1]
-        else:
-            return None
+            return self.some_list.pop()
 
     def peek(self):
         if not self.isEmpty():

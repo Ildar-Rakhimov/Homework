@@ -30,4 +30,4 @@ def brackets_balance(some_string):
 
 
 if __name__ == '__main__':
-    brackets_balance('[([])((([[[]]])))]{()}')
+    brackets_balance('[[{())}]')
